@@ -164,5 +164,8 @@ cython_debug/
 # Ignore the models
 *.pt
 
-# Ignore videos
+# Ignore Media
 *.mp4
+*.png
+
+dump.rdb

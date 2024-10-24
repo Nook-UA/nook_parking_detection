@@ -12,4 +12,4 @@
         - `source venv/bin/activate`
         - `pip install -r requirements.txt`
     - Run the program:
-        - `python main.py`
+        - `uvicorn app.main:app --reload`
