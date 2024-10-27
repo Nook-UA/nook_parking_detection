@@ -61,7 +61,8 @@ def get_parking_info(rstp_url, parking_id, parking_spots):
                         pts = np.array(spot['points'], np.int32)
                         if cv2.pointPolygonTest(pts, (cx, cy), False) >= 0:
                             cv2.polylines(frame, [pts], True, (0, 0, 255), 2)
-                            occupied_spots += 1
+                            if total_spots != 0:
+                                occupied_spots += 1
                             break
         cap.release()
         return frame, occupied_spots, total_spots

@@ -6,6 +6,9 @@
 - Start streaming the video using ffmpeg:
     - `./stream.sh`
 
+- Run an Redis server:
+    - `redis-server`
+
 - Run the python script:
     - Create the enviroment and install the requirements
         - `python -m venv venv`

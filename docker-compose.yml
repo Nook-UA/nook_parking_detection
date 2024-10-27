@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  rtsp-server:
+    image: aler9/rtsp-simple-server
+    container_name: rtsp-server
+    volumes:
+      - ./rtsp-simple-server.yml:/rtsp-simple-server.yml
+    ports:
+      - "8554:8554"
+    restart: always
+    network_mode: "host"
+
+  redis:
+    image: redis:latest
+    container_name: redis-server
+    network_mode: "host"
+    ports:
+      - "6379:6379"
+    restart: always
+
+  streamer:
+    image: jrottenberg/ffmpeg:latest  # Common ffmpeg Docker image, adjust if needed
+    container_name: video-streamer
+    volumes:
+      - .:/app                    # Mount the current directory into /app
+    working_dir: /app             # Set working directory to /app
+    entrypoint: ["./stream.sh"]    # Reference the script from /app
+    network_mode: "host"
+    depends_on:
+      - rtsp-server
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Ensure a Dockerfile is present for the Python app setup
+    container_name: python-app
+    network_mode: "host"
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+      - rtsp-server
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
