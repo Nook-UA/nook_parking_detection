@@ -1,4 +1,3 @@
-# Dockerfile for Python App
 FROM python:3.9-slim
 
 WORKDIR /app
@@ -6,9 +5,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY src src
+copy coco.txt .
 
 RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "5000"]
