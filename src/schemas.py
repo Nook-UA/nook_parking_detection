@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 from typing import List, Tuple
+from json import JSONEncoder
 
 class ParkingSpot(BaseModel):
-    points: List[Tuple[int, int]]  # List of points that form a polygon for the parking spot
+    name: str
+    points: List[Tuple[int, int]]  
 
 class ParkingLot(BaseModel):
-    parking_id: str
+    id: str
     rstp_url: str
