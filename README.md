@@ -26,3 +26,9 @@
 
 - Stream the video:
     - `./stream.sh`
+
+# Tests
+
+- To run the tests make sure you are inside the venv and use:
+    - `source venv/bin/activate`
+    - `python -m pytest`
