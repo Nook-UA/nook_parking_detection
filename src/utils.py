@@ -8,6 +8,22 @@ model = YOLO('yolo11s.pt')
 with open("coco.txt", "r") as coco_file:
     things = coco_file.read().split("\n")
 
+def is_rtsp_link_working(rtsp_url: str) -> bool:
+
+    try:
+        cap = cv2.VideoCapture(rtsp_url)
+    except:
+        return False
+        
+    if not cap.isOpened():
+        return False
+
+    ret, frame = cap.read()
+
+    cap.release()
+
+    return ret
+
 def get_parking_info(rstp_url, parking_spots=None):
     frames_to_skip = 15
     frame_num = 0

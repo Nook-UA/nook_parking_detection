@@ -2,7 +2,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
 
 from src.schemas import ParkingLot, ParkingSpot
-from src.utils import get_parking_info
+from src.utils import get_parking_info, is_rtsp_link_working
 
 import redis
 import os
@@ -50,6 +50,9 @@ async def add_parking_lot(parking_lot: ParkingLot, background_tasks: BackgroundT
     if db.get(f"parking_lot:{parking_lot.id}"):
         raise HTTPException(status_code=409, detail="Parking lot already exists")
 
+    if not is_rtsp_link_working(parking_lot.rstp_url):
+        raise HTTPException(status_code=400, detail="Failed to capture frame from RTSP stream")
+
     db.set(f"parking_lot:{parking_lot.id}", parking_lot.rstp_url)
 
     background_tasks.add_task(start_parking_lot_service, parking_lot)
@@ -77,7 +80,7 @@ async def set_parking_spots(parking_lot_id: str, spots: list[ParkingSpot]):
         raise HTTPException(status_code=404, detail="Parking lot not found")
     
     # convert the ParkingSpots to dicts to be able to store them in redis
-    spots = [spot.dict() for spot in spots]
+    spots = [spot.model_dump() for spot in spots]
     db.set(f"parking_lot:{parking_lot_id}:parking_spots", json.dumps(spots))
 
     return {"status": f"Parking spots added to '{parking_lot_id}'"}
