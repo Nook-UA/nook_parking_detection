@@ -39,9 +39,12 @@ def start_parking_lot_service(parking_lot: ParkingLot):
                 "occupied": occupied_spots,
                 "total": total_spots
             }
-
-            db.set(f"parking_lot:{parking_lot.id}:occupancy", json.dumps(occupancy_data))
-
+        else:
+            occupancy_data = {
+                "ERROR": "Cannot acess the RTSP URL"
+            }
+            
+        db.set(f"parking_lot:{parking_lot.id}:occupancy", json.dumps(occupancy_data))
         time.sleep(DELAY_BETWEEN_CHECKS)
 
 @app.post("/add_parking_lot/", status_code=201)

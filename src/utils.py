@@ -27,13 +27,17 @@ def is_rtsp_link_working(rtsp_url: str) -> bool:
 def get_parking_info(rstp_url, parking_spots=None):
     frames_to_skip = 15
     frame_num = 0
-    cap = cv2.VideoCapture(rstp_url)
-    
+
     occupied_spots = 0
     total_spots = 0
 
     if parking_spots:
         total_spots = len(parking_spots)
+
+    cap = cv2.VideoCapture(rstp_url)
+
+    if not cap.isOpened():
+        return None, occupied_spots, total_spots
 
     while True:
         ret, frame = cap.read()
@@ -81,4 +85,5 @@ def get_parking_info(rstp_url, parking_spots=None):
                                 occupied_spots += 1
                             break
         cap.release()
+
         return frame, occupied_spots, total_spots
