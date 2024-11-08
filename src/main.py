@@ -69,7 +69,7 @@ async def get_parking_lot_info(parking_lot_id: str):
 
     return {
         "parking_lot_id": parking_lot_id,
-        "image_url": f"/images/{parking_lot_id}",
+        "image_url": f"/images/{parking_lot_id}.png",
         "occupancy": occupancy
     }
 
