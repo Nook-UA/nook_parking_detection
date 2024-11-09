@@ -47,8 +47,8 @@ def get_parking_info(rstp_url, parking_spots=None):
             continue
 
         # Predict with YOLO
-        # 2 - car | 5 - bus | 7 - truck
-        results = model.predict(frame, classes=[2, 5, 7])
+        # 2 - car | 3 - motorcycle | 5 - bus | 7 - truck
+        results = model.predict(frame, classes=[2, 3, 5, 7])
         a = results[0].boxes.data
         px = pd.DataFrame(a).astype("float")
 
