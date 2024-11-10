@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  rtsp-server:
+    image: aler9/rtsp-simple-server
+    container_name: rtsp-server
+    volumes:
+      - ./rtsp-simple-server.yml:/rtsp-simple-server.yml
+    ports:
+      - "8554:8554"
+    restart: always
+    network_mode: "host"
+
+  redis:
+    image: redis:latest
+    container_name: redis-server
+    network_mode: "host"
+    ports:
+      - "6379:6379"
+    restart: always
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: python-app
+    network_mode: "host"
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+      - rtsp-server
