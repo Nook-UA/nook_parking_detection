@@ -5,3 +5,6 @@ ultralytics
 pandas
 numpy
 redis
+pytest
+docker
+httpx

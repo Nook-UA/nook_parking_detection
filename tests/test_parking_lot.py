@@ -78,7 +78,7 @@ def test_get_parking_lot_info(client, redis_container):
     assert response.status_code == 200
     assert response.json() == {
         "parking_lot_id": "3",
-        "image_url": "/images/3",
+        "image_url": "/images/3.png",
         "occupancy": {"freed": 7, "occupied": 3, "total": 10}
     }
 
