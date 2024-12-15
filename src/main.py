@@ -1,6 +1,7 @@
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse
-
 from src.schemas import ParkingLot, ParkingSpot
 from src.utils import get_parking_info, is_rtsp_link_working
 
@@ -22,38 +23,53 @@ if not os.path.exists(IMAGE_DIR):
 
 DELAY_BETWEEN_CHECKS = 10
 
-app = FastAPI()
+class BackgroundRunner:
+    def __init__(self):
+        pass
+    
+    async def start_parking_lot_service(self, parking_lot: ParkingLot):
+        while True:
+            parking_spots = db.get(f"parking_lot:{parking_lot.id}:parking_spots")
+            if parking_spots:
+                parking_spots = json.loads(parking_spots)
+            else:
+                parking_spots = None
 
-def start_parking_lot_service(parking_lot: ParkingLot):
-    while True:
+            frame, occupied_spots, total_spots = get_parking_info(parking_lot.rstp_url, parking_spots)
+            if frame is not None:
+                image_path = os.path.join(IMAGE_DIR, f"{parking_lot.id}.png")
+                cv2.imwrite(image_path, frame)
 
-        parking_spots = db.get(f"parking_lot:{parking_lot.id}:parking_spots")
-        if parking_spots:
-            parking_spots = json.loads(parking_spots)
-        else:
-            parking_spots = None
+                occupancy_data = {
+                    "freed": total_spots - occupied_spots,
+                    "occupied": occupied_spots,
+                    "total": total_spots
+                }
+            else:
+                occupancy_data = {
+                    "ERROR": "Cannot access the RTSP URL"
+                }
+                
+            db.set(f"parking_lot:{parking_lot.id}:occupancy", json.dumps(occupancy_data))
+            await asyncio.sleep(DELAY_BETWEEN_CHECKS)
 
-        frame, occupied_spots, total_spots = get_parking_info(parking_lot.rstp_url, parking_spots)
-        if frame is not None:
-            image_path = os.path.join(IMAGE_DIR, f"{parking_lot.id}.png")
-            cv2.imwrite(image_path, frame)
+runner = BackgroundRunner()
 
-            occupancy_data = {
-                "freed": total_spots - occupied_spots,
-                "occupied": occupied_spots,
-                "total": total_spots
-            }
-        else:
-            occupancy_data = {
-                "ERROR": "Cannot acess the RTSP URL"
-            }
-            
-        db.set(f"parking_lot:{parking_lot.id}:occupancy", json.dumps(occupancy_data))
-        time.sleep(DELAY_BETWEEN_CHECKS)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # On application startup, query Redis for all parking lots and start background tasks for each
+    for key in db.scan_iter("parking_lot:*"):
+        parking_lot_id = key.decode().split(":")[1]
+        parking_lot_url = db.get(f"parking_lot:{parking_lot_id}")
+        if parking_lot_url:
+            parking_lot = ParkingLot(id=parking_lot_id, rstp_url=parking_lot_url.decode())
+            asyncio.create_task(runner.start_parking_lot_service(parking_lot))
+    yield
+    
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/add_parking_lot/", status_code=201)
 async def add_parking_lot(parking_lot: ParkingLot, background_tasks: BackgroundTasks):
-
     if db.get(f"parking_lot:{parking_lot.id}"):
         raise HTTPException(status_code=409, detail="Parking lot already exists")
 
@@ -62,13 +78,12 @@ async def add_parking_lot(parking_lot: ParkingLot, background_tasks: BackgroundT
 
     db.set(f"parking_lot:{parking_lot.id}", parking_lot.rstp_url)
 
-    background_tasks.add_task(start_parking_lot_service, parking_lot)
+    asyncio.create_task(runner.start_parking_lot_service(parking_lot))
 
     return {"status": f"Parking lot '{parking_lot.id}' added"}
 
 @app.get("/parking_lot/{parking_lot_id}", status_code=200)
 async def get_parking_lot_info(parking_lot_id: str):
-    
     if not db.get(f"parking_lot:{parking_lot_id}"):
         raise HTTPException(status_code=404, detail="Parking lot not found")
 
@@ -82,7 +97,6 @@ async def get_parking_lot_info(parking_lot_id: str):
 
 @app.post("/parking_lot/{parking_lot_id}/spots")
 async def set_parking_spots(parking_lot_id: str, spots: list[ParkingSpot]):
-
     if not db.get(f"parking_lot:{parking_lot_id}"):
         raise HTTPException(status_code=404, detail="Parking lot not found")
     
