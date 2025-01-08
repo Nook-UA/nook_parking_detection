@@ -4,7 +4,7 @@ from json import JSONEncoder
 
 class ParkingSpot(BaseModel):
     name: str
-    points: List[Tuple[int, int]]  
+    points: List[Tuple[float, float]]  
 
 class ParkingLot(BaseModel):
     id: str
