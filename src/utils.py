@@ -46,6 +46,8 @@ def get_parking_info(rstp_url, parking_spots=None):
         if frame_num < frames_to_skip:
             continue
 
+        frame=cv2.resize(frame,(1280,720))    
+        
         # Predict with YOLO
         # 2 - car | 3 - motorcycle | 5 - bus | 7 - truck
         results = model.predict(frame, classes=[2, 3, 5, 7])
@@ -68,6 +70,7 @@ def get_parking_info(rstp_url, parking_spots=None):
             y2 = int(row[3])
             
             cx = int((x1 + x2) // 2)
+            # cy = int((y1 + y2) // 2)
             cy = int((int((y1 + y2) // 2) + y2) // 2)
             cv2.circle(frame, (cx, cy), 3, (0, 0, 255), -1)
 
