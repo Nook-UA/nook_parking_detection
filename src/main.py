@@ -4,6 +4,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException, APIRouter
 from fastapi.responses import FileResponse
 from src.schemas import ParkingLot, ParkingSpot
 from src.utils import get_parking_info, is_rtsp_link_working
+from fastapi.middleware.cors import CORSMiddleware
 
 import redis
 import os
@@ -120,3 +121,11 @@ async def serve_image(image_name: str):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,  # Allow cookies and other credentials
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
