@@ -1,6 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, APIRouter
 from fastapi.responses import FileResponse
 from src.schemas import ParkingLot, ParkingSpot
 from src.utils import get_parking_info, is_rtsp_link_working
@@ -66,9 +66,13 @@ async def lifespan(app: FastAPI):
             asyncio.create_task(runner.start_parking_lot_service(parking_lot))
     yield
     
-app = FastAPI(lifespan=lifespan)
+router = APIRouter(prefix='/parking-detection')
 
-@app.post("/add_parking_lot/", status_code=201)
+@router.get("/health", status_code=200)
+async def check_health():
+    return {"status": f"healthy"}
+
+@router.post("/add_parking_lot", status_code=201)
 async def add_parking_lot(parking_lot: ParkingLot, background_tasks: BackgroundTasks):
     if db.get(f"parking_lot:{parking_lot.id}"):
         raise HTTPException(status_code=409, detail="Parking lot already exists")
@@ -82,7 +86,7 @@ async def add_parking_lot(parking_lot: ParkingLot, background_tasks: BackgroundT
 
     return {"status": f"Parking lot '{parking_lot.id}' added"}
 
-@app.get("/parking_lot/{parking_lot_id}", status_code=200)
+@router.get("/parking_lot/{parking_lot_id}", status_code=200)
 async def get_parking_lot_info(parking_lot_id: str):
     if not db.get(f"parking_lot:{parking_lot_id}"):
         raise HTTPException(status_code=404, detail="Parking lot not found")
@@ -95,7 +99,7 @@ async def get_parking_lot_info(parking_lot_id: str):
         "occupancy": occupancy
     }
 
-@app.post("/parking_lot/{parking_lot_id}/spots")
+@router.post("/parking_lot/{parking_lot_id}/spots")
 async def set_parking_spots(parking_lot_id: str, spots: list[ParkingSpot]):
     if not db.get(f"parking_lot:{parking_lot_id}"):
         raise HTTPException(status_code=404, detail="Parking lot not found")
@@ -106,10 +110,13 @@ async def set_parking_spots(parking_lot_id: str, spots: list[ParkingSpot]):
 
     return {"status": f"Parking spots added to '{parking_lot_id}'"}
 
-@app.get("/images/{image_name}")
+@router.get("/images/{image_name}")
 async def serve_image(image_name: str):
     image_path = os.path.join(IMAGE_DIR, image_name)
     if not os.path.exists(image_path):
         raise HTTPException(status_code=404, detail="Image not found")
 
     return FileResponse(image_path, media_type="image/png")
+
+app = FastAPI(lifespan=lifespan)
+app.include_router(router)
