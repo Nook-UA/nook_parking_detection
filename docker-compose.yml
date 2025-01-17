@@ -1,0 +1,23 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: redis-server
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    restart: always
+
+  parking_detection:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: parking_detection
+    ports:
+      - "5000:5000"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - redis
